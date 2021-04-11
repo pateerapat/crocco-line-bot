@@ -1,5 +1,7 @@
-import json, random, requests
+import json, random, requests, gspread
 from flask import Flask, request
+from oauth2client.service_account import ServiceAccountCredentials
+
 app = Flask(__name__)
 
 #ดึงข้อมูล Q&A
@@ -75,7 +77,7 @@ def webhook():
         response = requests.get(base_url, params=params).json()
         response.keys()
         if response['status'] == 'OK':
-            address = response['results'][0][formatted_address]
+            address = response['results'][0]['formatted_address']
             geometry = response['results'][0]['geometry']
             lat = geometry['location']['lat']
             lon = geometry['location']['lng']
@@ -98,7 +100,46 @@ def webhook():
                 }
             ]
         }
-        
+
+    #ส่งคำร้อเรียน
+    elif query_result.get('action') == "action-task":
+        return {
+            "displayText": '25',
+            "source": "webhookdata",
+            "fulfillmentMessages": [
+                {
+                    "text": {"text": ["พิมพ์คำร้องเรียน หรือปัญหาและคำแนะนำแล้วกดส่ง เพื่อส่งคำร้องเรียน หรือปัญหาและคำแนะนำให้กับพวกเรา"]},
+                    "platform": "LINE"
+                }
+            ]
+        }
+
+    #ยืนยันการส่งคำร้องเรียน
+    elif query_result.get('action') == "action-task-send":
+        scope = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
+        creds = ServiceAccountCredentials.from_json_keyfile_name("mapapi.json", scope)
+        client = gspread.authorize(creds)
+        sheet = client.open("คำร้องเรียน").sheet1
+        data = sheet.get_all_records()
+
+        level = query_result.get('outputContexts')[0].get('parameters').get('task-level')
+        faculty = query_result.get('outputContexts')[0].get('parameters').get('task-faculty')
+        category = query_result.get('outputContexts')[0].get('parameters').get('task-category')
+        question = query_result.get('queryText')
+        insertRow = [level, faculty, category, question]
+        sheet.append_row(insertRow)
+        text = "ระดับ : "+level+"\n"+"คณะ : "+faculty+"\n"+"หมวดหมู่ : "+category+"\n"+"คำถามที่ถูกส่ง : "+question
+        return {
+            "displayText": '25',
+            "source": "webhookdata",
+            "fulfillmentMessages": [
+                {
+                    "text": {"text": [text+"\n\nพวกเราได้รับคำร้องเรียน และปัญหาและข้อแนะนำของคุณแล้ว"]},
+                    "platform": "LINE"
+                }
+            ]
+        }
+
     #แสดงข้อมูลคำถาม
     elif query_result.get('action') == "action-show-category":
         selected = int(query_result.get('queryText'))-1
@@ -482,6 +523,18 @@ def webhook():
                 }
             elif "ครอบคลุม" in query_result.get('queryText') or "คุ้มครอง" in query_result.get('queryText'):
                 node = "ประกันมีความคุ้มครอง ดังต่อไปนี้\n- ค่ายา\n- ค่าหมอ\n- ค่าห้อง\n- ค่ารักษาพยาบาล\n- ค่าบริการทางการแพทย์\n- ค่าผ่าตัดฯ\nประกันไม่มีความคุ้มครอง ดังต่อไปนี้\nค่ารักษาพยาบาลบางรายการจะไม่คุ้มครอง เช่น\n\n- ค่าบริการอื่นๆ ที่โรงพยาบาลระบุไม่ชัดเจน\n- ค่าเวชภัณฑ์ 2 \n- รถเข็น\n- ค่านิติเวช\n- ค่ารถพยาบาล\n- ศัลยกรรมตกแต่ง\n- การทำฟัน\n- อุดฟันฯ\n- เจ็บป่วย\n- รักษารากฟันเกิน  7 วัน\n- ทะเลาะวิวาท\n- กีฬาเสี่ยงภัย ยกเว้นกีฬาที่สถาบันจัดการแข่งขันกีฬามหาวิทยาลัย"
+                return {
+                    "displayText": '25',
+                    "source": "webhookdata",
+                    "fulfillmentMessages": [
+                        {
+                            "text": {"text": [node]},
+                            "platform": "LINE"
+                        }
+                    ]
+                }
+            elif "โควิด" in query_result.get('queryText') or "covid" in query_result.get('queryText'):
+                node = "ทุนช่วยเหลือนักศึกษาในสถานการณ์การแพร่ระบาด COVID-19 สามารถหาข้อมูลได้จาก https://office.kmitl.ac.th/osda/kmitl-scholarships/"
                 return {
                     "displayText": '25',
                     "source": "webhookdata",
@@ -1148,6 +1201,32 @@ def webhook():
         #ใส่ชุดธรรมดาได้วันไหน
         elif "ใส่ชุด" in query_result.get('queryText'):
             node = "สามารถใส่ชุดธรรมดา หรือชุดไปรเวทมาได้ทุกวันพฤหัสบดี"
+            return {
+                "displayText": '25',
+                "source": "webhookdata",
+                "fulfillmentMessages": [ 
+                    {
+                        "text": {"text": [node]},
+                        "platform": "LINE"
+                    }
+                ]
+            }
+        #ใส่ชุดธรรมดาได้วันไหน
+        elif "ใส่ชุด" in query_result.get('queryText'):
+            node = "สามารถใส่ชุดธรรมดา หรือชุดไปรเวทมาได้ทุกวันพฤหัสบดี"
+            return {
+                "displayText": '25',
+                "source": "webhookdata",
+                "fulfillmentMessages": [ 
+                    {
+                        "text": {"text": [node]},
+                        "platform": "LINE"
+                    }
+                ]
+            }
+        #ชื่ออธิการ
+        elif "อธิการ" in query_result.get('queryText') and elif "ชื่อ" in query_result.get('queryText'):
+            node = "อธิการบดีของเรามีชื่อว่าพี่เอ้ ชื่อจริงว่าสุชัชวีร์ สุวรรณสวัสดิ์"
             return {
                 "displayText": '25',
                 "source": "webhookdata",
