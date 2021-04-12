@@ -101,40 +101,71 @@ def webhook():
             ]
         }
 
-    #ส่งคำร้อเรียน
+    #ส่งคำร้องเรียน
     elif query_result.get('action') == "action-task":
+        level = query_result.get('outputContexts')[0].get('parameters').get('task-level')
+        faculty = query_result.get('outputContexts')[0].get('parameters').get('task-faculty')
+        category = query_result.get('outputContexts')[0].get('parameters').get('task-category')
+        node = "พิมพ์ปัญหาที่คุณต้องการบอกกับเรา แล้วกดส่ง"
         return {
             "displayText": '25',
             "source": "webhookdata",
             "fulfillmentMessages": [
                 {
-                    "text": {"text": ["พิมพ์คำร้องเรียน หรือปัญหาและคำแนะนำแล้วกดส่ง เพื่อส่งคำร้องเรียน หรือปัญหาและคำแนะนำให้กับพวกเรา"]},
+                    "text": {"text": [node]},
                     "platform": "LINE"
                 }
             ]
         }
 
-    #ยืนยันการส่งคำร้องเรียน
+    #ส่งคำร้องเรียนคำถาม
     elif query_result.get('action') == "action-task-send":
-        scope = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
-        creds = ServiceAccountCredentials.from_json_keyfile_name("mapapi.json", scope)
-        client = gspread.authorize(creds)
-        sheet = client.open("คำร้องเรียน").sheet1
-        data = sheet.get_all_records()
-
         level = query_result.get('outputContexts')[0].get('parameters').get('task-level')
         faculty = query_result.get('outputContexts')[0].get('parameters').get('task-faculty')
         category = query_result.get('outputContexts')[0].get('parameters').get('task-category')
-        question = query_result.get('queryText')
-        insertRow = [level, faculty, category, question]
-        sheet.append_row(insertRow)
-        text = "ระดับ : "+level+"\n"+"คณะ : "+faculty+"\n"+"หมวดหมู่ : "+category+"\n"+"คำถามที่ถูกส่ง : "+question
+        ques = query_result.get('queryText')
+        node = "ยืนยันการส่งข้อมูลปัญหาดังต่อไปนี้\nระดับ : "+level+"\nคณะ : "+faculty+"\nหมวดหมู่ : "+category+"ปัญหา : "+ques
         return {
             "displayText": '25',
             "source": "webhookdata",
             "fulfillmentMessages": [
                 {
-                    "text": {"text": [text+"\n\nพวกเราได้รับคำร้องเรียน และปัญหาและข้อแนะนำของคุณแล้ว"]},
+                    "text": {"text": [node]},
+                    "platform": "LINE"
+                },
+                {
+                    "quickReplies": {
+                        "title": "ยืนยันการส่งข้อมูล",
+                        "quickReplies": ["ยืนยัน", "ยกเลิก"]
+                    },
+                    "platform": "LINE"
+                }
+            ]
+        }
+
+    #ยืนยันส่งคำร้องเรียน
+    elif query_result.get('action') == "action-task-accept":
+        level = query_result.get('outputContexts')[0].get('parameters').get('task-level')
+        faculty = query_result.get('outputContexts')[0].get('parameters').get('task-faculty')
+        category = query_result.get('outputContexts')[0].get('parameters').get('task-category')
+        ques = query_result.get('outputContexts')[0].get('parameters').get('task-question')
+        if query_result.get('queryText') == "ยืนยัน":
+            node = "ปัญหาถูกส่งเข้าสู่ระบบเรียบร้อยแล้ว สามารถกดส่งปัญหาใหม่ได้ที่ช่องด้านล่าง"
+            scope = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
+            creds = ServiceAccountCredentials.from_json_keyfile_name('/home/PlT/crocco/mapapi.json', scope)
+            client = gspread.authorize(creds)
+            sheet = client.open("คำร้องเรียน").sheet1
+            data = sheet.get_all_records()
+            insertRow = [level, faculty, category, ques]
+            sheet.append_row(insertRow)
+        else:
+            node = "ยกเลิกการส่งปัญหาเรียบร้อยแล้ว สามารถกดส่งปัญหาใหม่ได้ที่ช่องด้านล่าง"
+        return {
+            "displayText": '25',
+            "source": "webhookdata",
+            "fulfillmentMessages": [
+                {
+                    "text": {"text": [node]},
                     "platform": "LINE"
                 }
             ]
