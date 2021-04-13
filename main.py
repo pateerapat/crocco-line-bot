@@ -152,7 +152,7 @@ def webhook():
         if query_result.get('queryText') == "ยืนยัน":
             node = "ปัญหาถูกส่งเข้าสู่ระบบเรียบร้อยแล้ว สามารถกดส่งปัญหาใหม่ได้ที่ช่องด้านล่าง"
             scope = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
-            creds = ServiceAccountCredentials.from_json_keyfile_name('/home/PlT/crocco/mapapi.json', scope)
+            creds = ServiceAccountCredentials.from_json_keyfile_name('src/mapapi.json', scope)
             client = gspread.authorize(creds)
             sheet = client.open("คำร้องเรียน").sheet1
             data = sheet.get_all_records()
