@@ -1256,7 +1256,7 @@ def webhook():
                 ]
             }
         #ชื่ออธิการ
-        elif "อธิการ" in query_result.get('queryText') and elif "ชื่อ" in query_result.get('queryText'):
+        elif "อธิการ" in query_result.get('queryText') and "ชื่อ" in query_result.get('queryText'):
             node = "อธิการบดีของเรามีชื่อว่าพี่เอ้ ชื่อจริงว่าสุชัชวีร์ สุวรรณสวัสดิ์"
             return {
                 "displayText": '25',
