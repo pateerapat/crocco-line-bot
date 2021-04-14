@@ -67,7 +67,7 @@ def webhook():
     
     #ค้นหาสถานที่
     elif query_result.get('action') == "action-search":
-        API_KEY = 'AIzaSyC_HWZLbWZOlxL2HtB1AThf27Don0kNqe8'
+        API_KEY = ''
         searchBy = query_result.get('queryText')
         params = {
             'key': API_KEY,
